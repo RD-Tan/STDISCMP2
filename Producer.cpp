@@ -1,46 +1,82 @@
 #include "Producer.h"
 
-Producer::Producer(unsigned long totalParties) {
-	for (int i = 0; i < totalParties; i++) {
-		Character dps1 = { i, "DPS_" + std::to_string(i), ClassType::DPS };
-		//Character dps2 = { i, "DPS_" + std::to_string(i + totalParties), ClassType::DPS };
-		//Character dps3 = { i, "DPS_" + std::to_string(i + totalParties * 2), ClassType::DPS };
-		Character tank = { i, "Tank_" + std::to_string(i + totalParties * 3), ClassType::Tank };
-		Character healer = { i, "Healer_" + std::to_string(i + totalParties * 4), ClassType::Healer };
-		dpsQueue.push(dps1);
-		//dpsQueue.push(dps2);
-		//dpsQueue.push(dps3);
-		tankQueue.push(tank);
-		healerQueue.push(healer);
+Producer::Producer(Config config) {
+	std::vector<std::string> usernames;
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	std::ifstream file("usernames.csv");
+
+	if (!file.is_open()) {
+		std::cerr << "Error: Could not open the file." << std::endl;
+		exit(1);
+	}
+
+	std::string line;
+	while (std::getline(file, line)) {
+		std::stringstream ss(line);
+		std::string cell;
+		while (std::getline(ss, cell, ',')) {
+			usernames.push_back(cell);
+		}
+
+	}
+
+	file.close();
+
+	std::uniform_int_distribution<int> dist(0, usernames.size() - 1);
+
+	for (int i = 0; i < config.DPSCount; i++) {
+		Character dps = { i, usernames[dist(gen)], ClassType::DPS };
+		dpsQueue.push(dps);
+	}
+
+	for (int i = 0; i < config.tankCount; i++) {
+		Character dps = { i, usernames[dist(gen)], ClassType::Tank };
+		tankQueue.push(dps);
+	}
+
+	for (int i = 0; i < config.healerCount; i++) {
+		Character dps = { i, usernames[dist(gen)], ClassType::Healer };
+		healerQueue.push(dps);
 	}
 }
 
-Character Producer::popDPS() {
-	std::lock_guard<std::mutex> lock(dpsM);
-	if (dpsQueue.empty()) {
-		return { -1, "", ClassType::DPS };
-	}
-	Character character = dpsQueue.front();
+bool Producer::tryAcquireParty(std::vector<Character>& newParty) {
+	std::lock_guard<std::mutex> lock(partyM);
+	if (tankQueue.empty() || healerQueue.empty()) return false;
+	if (dpsQueue.size() < 3) return false;
+
+	newParty.push_back(dpsQueue.front());
 	dpsQueue.pop();
-	return character;
-}
+	newParty.push_back(dpsQueue.front());
+	dpsQueue.pop();
+	newParty.push_back(dpsQueue.front());
+	dpsQueue.pop();
 
-Character Producer::popTank() {
-	std::lock_guard<std::mutex> lock(tankM);
-	if (tankQueue.empty()) {
-		return { -1, "", ClassType::Tank };
-	}
-	Character character = tankQueue.front();
+	newParty.push_back(tankQueue.front());
 	tankQueue.pop();
-	return character;
+
+	newParty.push_back(healerQueue.front());
+	healerQueue.pop();
+
+	return true;
 }
 
-Character Producer::popHealer() {
-	std::lock_guard<std::mutex> lock(healerM);
-	if (healerQueue.empty()) {
-		return { -1, "", ClassType::Healer };
+std::vector<Character> Producer::dumpRemaining() {
+	std::vector<Character> dump;
+	while(!dpsQueue.empty()) {
+		dump.push_back(dpsQueue.front());
+		dpsQueue.pop();
 	}
-	Character character = healerQueue.front();
-	healerQueue.pop();
-	return character;
+	while (!tankQueue.empty()) {
+		dump.push_back(tankQueue.front());
+		tankQueue.pop();
+	}
+	while (!healerQueue.empty()) {
+		dump.push_back(healerQueue.front());
+		healerQueue.pop();
+	}
+	return dump;
 }

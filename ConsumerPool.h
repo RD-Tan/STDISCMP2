@@ -4,6 +4,9 @@
 #include <vector>
 #include <iostream>
 #include <random>
+#include <atomic>
+#include <syncstream>
+#include <condition_variable>
 #include "Config.h"
 #include "Producer.h"
 
@@ -12,21 +15,14 @@ class ConsumerPool
 private:
 	Producer& producer;
 	std::vector<std::thread> threads;
+	std::atomic<bool> isShutdown;
 
-	// rng things
-	std::random_device rd; 
-	std::mt19937 gen;       
-	std::uniform_int_distribution<int> dist;
-
-
-	void run(int i);
+	void run(int i, Config config);
 
 public:
 	ConsumerPool(Producer& producer, Config config);
-	~ConsumerPool();
-
-
-
-
+	~ConsumerPool() = default;
+	
+	void joinAllThreads();
 };
 

@@ -14,3 +14,5 @@ struct Character
 	std::string name;
 	ClassType classType;
 };
+
+std::string classTypeToString(ClassType ct);

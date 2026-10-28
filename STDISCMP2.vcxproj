@@ -139,15 +139,26 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ConfigReader.cpp" />
     <ClCompile Include="ConsumerPool.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Producer.cpp" />
+    <ClCompile Include="Character.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConfigReader.h" />
     <ClInclude Include="ConsumerPool.h" />
     <ClInclude Include="Character.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Producer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="usernames.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="config.txt">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+    </Text>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
